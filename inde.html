@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STUDIO/01 — Photobooth HD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#151319;
+    --panel:#1e1c24;
+    --panel-2:#26232d;
+    --line:#38343f;
+    --text:#f5f3ee;
+    --muted:#8b8894;
+    --red:#e2402f;
+    --amber:#f2a93b;
+    --green:#4caf6d;
+    --mono: 'JetBrains Mono', monospace;
+    --disp: 'Bebas Neue', sans-serif;
+    --body: 'Inter', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% -10%, rgba(242,169,59,.08), transparent 40%),
+      radial-gradient(circle at 90% 110%, rgba(226,64,47,.08), transparent 40%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--body);
+    min-height:100vh;
+    padding:28px 18px 60px;
+  }
+  .wrap{max-width:1120px;margin:0 auto;}
+
+  /* HEADER */
+  header{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:1px solid var(--line);
+    padding-bottom:16px;margin-bottom:22px;
+    flex-wrap:wrap;gap:12px;
+  }
+  .brand{display:flex;align-items:baseline;gap:10px;}
+  .brand .mark{
+    width:12px;height:12px;border-radius:50%;
+    background:var(--red);
+    box-shadow:0 0 0 3px rgba(226,64,47,.2);
+  }
+  .brand h1{
+    font-family:var(--disp);
+    font-size:34px;letter-spacing:2px;margin:0;
+    line-height:1;
+  }
+  .brand span{color:var(--amber);}
+  .tagline{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+  .status{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right;line-height:1.6;}
+  .status b{color:var(--text);}
+  .dot-live{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:5px;box-shadow:0 0 6px var(--green);}
+  .dot-off{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--muted);margin-right:5px;}
+
+  /* MAIN GRID */
+  main{display:grid;grid-template-columns:1.55fr 1fr;gap:22px;}
+  @media (max-width:880px){ main{grid-template-columns:1fr;} }
+
+  /* VIEWFINDER */
+  .viewfinder{
+    position:relative;
+    background:#000;
+    border:1px solid var(--line);
+    border-radius:4px;
+    overflow:hidden;
+    aspect-ratio:4/3;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .viewfinder video{
+    width:100%;height:100%;object-fit:cover;display:block;
+    image-rendering:auto;
+  }
+  .viewfinder video.mirror{transform:scaleX(-1);}
+  .placeholder{
+    font-family:var(--mono);color:var(--muted);font-size:12px;text-align:center;padding:20px;
+  }
+  .placeholder button{margin-top:12px;}
+
+  /* HUD overlay */
+  .hud{position:absolute;inset:0;pointer-events:none;font-family:var(--mono);}
+  .corner{position:absolute;width:22px;height:22px;border-color:var(--amber);opacity:.85;}
+  .corner.tl{top:14px;left:14px;border-top:2px solid;border-left:2px solid;}
+  .corner.tr{top:14px;right:14px;border-top:2px solid;border-right:2px solid;}
+  .corner.bl{bottom:14px;left:14px;border-bottom:2px solid;border-left:2px solid;}
+  .corner.br{bottom:14px;right:14px;border-bottom:2px solid;border-right:2px solid;}
+  .hud-readout{
+    position:absolute;top:14px;left:46px;
+    font-size:11px;color:var(--amber);letter-spacing:.5px;
+    display:flex;gap:14px;
+  }
+  .hud-readout span b{color:var(--text);font-weight:500;}
+  .hud-rec{
+    position:absolute;top:14px;right:46px;
+    font-size:11px;color:var(--red);display:flex;align-items:center;gap:6px;
+    opacity:0;transition:opacity .2s;
+  }
+  .hud-rec.on{opacity:1;}
+  .hud-rec .b{width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+  .grid-overlay{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .2s;}
+  .grid-overlay.show{opacity:.35;}
+  .grid-overlay .h1,.grid-overlay .h2{position:absolute;left:0;right:0;height:1px;background:var(--text);}
+  .grid-overlay .h1{top:33.33%;}
+  .grid-overlay .h2{top:66.66%;}
+  .grid-overlay .v1,.grid-overlay .v2{position:absolute;top:0;bottom:0;width:1px;background:var(--text);}
+  .grid-overlay .v1{left:33.33%;}
+  .grid-overlay .v2{left:66.66%;}
+
+  .vignette{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s;
+    background:radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,.55) 100%);}
+  .vignette.show{opacity:1;}
+
+  .countdown-num{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:var(--disp);font-size:140px;color:var(--text);
+    text-shadow:0 0 40px rgba(0,0,0,.6);
+    opacity:0;pointer-events:none;
+  }
+  .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;}
+
+  .bottom-bar{
+    position:absolute;bottom:0;left:0;right:0;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 14px;
+    font-family:var(--mono);font-size:10px;color:var(--muted);
+    background:linear-gradient(transparent, rgba(0,0,0,.5));
+  }
+  .eq{display:flex;align-items:flex-end;gap:2px;height:12px;}
+  .eq span{width:2px;background:var(--amber);border-radius:1px;animation:eqbar .9s ease-in-out infinite;}
+  .eq span:nth-child(1){animation-delay:0s;}
+  .eq span:nth-child(2){animation-delay:.15s;}
+  .eq span:nth-child(3){animation-delay:.3s;}
+  .eq span:nth-child(4){animation-delay:.45s;}
+  @keyframes eqbar{0%,100%{height:3px;}50%{height:12px;}}
+  .eq.paused span{animation-play-state:paused;height:3px;}
+
+  /* CONTROLS PANEL */
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:18px;
+    display:flex;flex-direction:column;gap:18px;
+  }
+  .section-label{
+    font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);
+    display:flex;align-items:center;gap:8px;margin-bottom:10px;
+  }
+  .section-label::after{content:'';flex:1;height:1px;background:var(--line);}
+
+  .filter-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .filter-swatch{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:3px;
+    padding:8px 4px;text-align:center;cursor:pointer;
+    font-family:var(--mono);font-size:9.5px;color:var(--muted);
+    letter-spacing:.5px;text-transform:uppercase;
+    transition:all .15s;
+  }
+  .filter-swatch:hover{border-color:var(--amber);color:var(--text);}
+  .filter-swatch.active{border-color:var(--red);color:var(--text);background:rgba(226,64,47,.12);}
+
+  .slider-row{margin-bottom:12px;}
+  .slider-row:last-child{margin-bottom:0;}
+  .slider-row label{
+    display:flex;justify-content:space-between;
+    font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-bottom:6px;
+  }
+  .slider-row label b{color:var(--text);font-weight:500;}
+  input[type=range]{
+    -webkit-appearance:none;width:100%;height:2px;background:var(--line);outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:13px;height:13px;border-radius:50%;
+    background:var(--amber);cursor:pointer;border:2px solid var(--bg);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:13px;height:13px;border-radius:50%;background:var(--amber);cursor:pointer;border:2px solid var(--bg);
+  }
+
+  .toggle-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{
+    font-family:var(--mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;
+    padding:7px 12px;border-radius:20px;border:1px solid var(--line);
+    color:var(--muted);cursor:pointer;background:transparent;transition:all .15s;
+  }
+  .chip:hover{border-color:var(--amber);color:var(--text);}
+  .chip.active{background:var(--amber);border-color:var(--amber);color:#1a1a1a;font-weight:600;}
+
+  .timer-row{display:flex;gap:8px;}
+  .timer-row .chip{flex:1;text-align:center;}
+  .quality-row{display:flex;gap:8px;}
+  .quality-row .chip{flex:1;text-align:center;}
+
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+  button{
+    font-family:var(--body);font-weight:600;font-size:13px;
+    border:none;border-radius:3px;padding:12px 18px;cursor:pointer;
+    transition:transform .1s, opacity .15s;
+  }
+  button:active{transform:scale(.97);}
+  .btn-primary{background:var(--red);color:#fff;flex:1;}
+  .btn-primary:hover{opacity:.9;}
+  .btn-secondary{background:var(--panel-2);color:var(--text);border:1px solid var(--line);}
+  .btn-secondary:hover{border-color:var(--amber);}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--line);font-size:11px;padding:8px 12px;}
+  .btn-ghost:hover{color:var(--text);border-color:var(--muted);}
+  button:disabled{opacity:.4;cursor:not-allowed;}
+
+  .music-card{
+    display:flex;align-items:center;gap:12px;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:10px 12px;
+  }
+  .music-toggle{
+    width:38px;height:38px;border-radius:50%;flex:0 0 auto;
+    background:var(--amber);color:#1a1a1a;font-size:14px;
+    display:flex;align-items:center;justify-content:center;padding:0;
+  }
+  .music-info{flex:1;min-width:0;}
+  .music-title{font-family:var(--mono);font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .music-sub{font-family:var(--mono);font-size:9.5px;color:var(--muted);margin-top:2px;}
+  .music-vol{width:70px;}
+  .url-row{display:flex;gap:8px;}
+  .url-input{
+    flex:1;min-width:0;background:var(--panel-2);border:1px solid var(--line);border-radius:3px;
+    color:var(--text);font-family:var(--mono);font-size:11px;padding:0 10px;
+  }
+  .url-input:focus{outline:none;border-color:var(--amber);}
+  .url-input::placeholder{color:var(--muted);}
+  .music-error{font-family:var(--mono);font-size:9.5px;color:var(--red);margin-top:6px;display:none;}
+
+  /* FILM STRIP GALLERY */
+  .filmstrip-wrap{
+    background:var(--panel);border:1px solid var(--line);border-radius:4px;
+    padding:16px 18px;margin-top:22px;
+  }
+  .filmstrip{
+    display:flex;gap:14px;overflow-x:auto;padding:14px 0 6px;
+  }
+  .frame{
+    position:relative;flex:0 0 auto;width:150px;
+    background:#0c0c0e;border:6px solid #0c0c0e;border-radius:2px;
+  }
+  .frame img{width:100%;display:block;border-radius:1px;}
+  .frame .sprockets{position:absolute;top:0;bottom:0;width:6px;left:-6px;
+    background-image:radial-gradient(circle, #151319 2.5px, transparent 2.6px);
+    background-size:100% 14px;background-position:center;}
+  .frame .sprockets.right{left:auto;right:-6px;}
+  .frame .frame-actions{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-top:6px;font-family:var(--mono);font-size:9px;color:var(--muted);
+  }
+  .frame .frame-actions a{color:var(--amber);text-decoration:none;}
+  .empty-msg{font-family:var(--mono);font-size:11px;color:var(--muted);padding:20px 0;text-align:center;}
+
+  footer{text-align:center;font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:30px;letter-spacing:.5px;}
+</style>
+</head>
+<body>
+
+<!-- Hidden SVG filter: real-time unsharp-mask style sharpening applied to the live video -->
+<svg width="0" height="0" style="position:absolute">
+  <filter id="sharpenFilter" color-interpolation-filters="sRGB">
+    <feConvolveMatrix id="sharpenMatrix" order="3" preserveAlpha="true" kernelMatrix="0 0 0 0 1 0 0 0 0"></feConvolveMatrix>
+  </filter>
+</svg>
+
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="brand">
+        <span class="mark"></span>
+        <h1>STUDIO<span>/01</span></h1>
+      </div>
+      <div class="tagline">Photobooth digital HD — bidik, pertajam, cetak</div>
+    </div>
+    <div class="status" id="statusBox">
+      <div><span class="dot-off" id="camDot"></span><b id="camStatus">Kamera belum aktif</b></div>
+      <div id="resStatus">— × —</div>
+      <div id="qualStatus">Kualitas: Full HD</div>
+    </div>
+  </header>
+
+  <main>
+    <!-- VIEWFINDER -->
+    <div>
+      <div class="viewfinder" id="viewfinder">
+        <div class="placeholder" id="placeholder">
+          Kamera belum diaktifkan.<br>
+          <button class="btn-primary" id="startCamBtn" style="margin-top:12px;">Aktifkan Kamera</button>
+        </div>
+        <video id="video" autoplay playsinline muted style="display:none;"></video>
+        <canvas id="captureCanvas" style="display:none;"></canvas>
+
+        <div class="hud">
+          <div class="corner tl"></div><div class="corner tr"></div>
+          <div class="corner bl"></div><div class="corner br"></div>
+          <div class="hud-readout">
+            <span>ISO <b id="isoVal">100</b></span>
+            <span>f/<b id="fVal">2.8</b></span>
+            <span><b id="shutterVal">1/125</b></span>
+            <span>SHARP <b id="sharpVal">0%</b></span>
+          </div>
+          <div class="hud-rec" id="recIndicator"><span class="b"></span>REC</div>
+        </div>
+        <div class="grid-overlay" id="gridOverlay"><div class="h1"></div><div class="h2"></div><div class="v1"></div><div class="v2"></div></div>
+        <div class="vignette" id="vignetteEl"></div>
+        <div class="countdown-num" id="countdownNum"></div>
+        <div class="flash" id="flashEl"></div>
+
+        <div class="bottom-bar">
+          <span id="modeLabel">MODE: SINGLE</span>
+          <span id="filterLabel">FILTER: NORMAL</span>
+          <span class="eq paused" id="eqBars"><span></span><span></span><span></span><span></span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="panel">
+      <div>
+        <div class="section-label">Musik Latar</div>
+        <div class="toggle-row" style="margin-bottom:10px;">
+          <button class="chip active" id="musicModeGen">Generative</button>
+          <button class="chip" id="musicModeUrl">URL (MP3/MP4)</button>
+          <button class="chip" id="musicModeYt">YouTube</button>
+        </div>
+        <div class="url-row" id="musicUrlRow" style="display:none;margin-bottom:10px;">
+          <input type="text" id="musicUrlInput" placeholder="https://.../lagu.mp3 atau .mp4" class="url-input">
+          <button class="btn-secondary" id="musicUrlLoad" style="padding:10px 14px;">Muat</button>
+        </div>
+        <div class="music-card">
+          <button class="music-toggle" id="musicToggle">▶</button>
+          <div class="music-info">
+            <div class="music-title" id="musicTitle">Ambient Loop — off</div>
+            <div class="music-sub" id="musicSub">dihasilkan langsung di browser, tanpa file</div>
+          </div>
+          <input type="range" class="music-vol" id="musicVol" min="0" max="100" value="35">
+        </div>
+        <audio id="musicAudio" preload="none" crossorigin="anonymous"></audio>
+        <div id="ytPlayerBox" style="width:1px;height:1px;overflow:hidden;opacity:0;position:absolute;pointer-events:none;">
+          <div id="ytPlayer"></div>
+        </div>
+        <div class="music-error" id="musicError">Gagal memuat audio dari sumber ini. Periksa link atau coba yang lain.</div>
+      </div>
+
+
+      <div>
+        <div class="section-label">Kualitas Kamera</div>
+        <div class="quality-row">
+          <button class="chip" data-q="hd">HD</button>
+          <button class="chip active" data-q="fhd">Full HD</button>
+          <button class="chip" data-q="uhd">4K</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">Filter Lensa</div>
+        <div class="filter-grid" id="filterGrid"></div>
+      </div>
+
+      <div>
+        <div class="section-label">Penyesuaian</div>
+        <div class="slider-row">
+          <label>Brightness <b id="bLabel">100%</b></label>
+          <input type="range" id="brightness" min="40" max="160" value="100">
+        </div>
+        <div class="slider-row">
+          <label>Contrast <b id="cLabel">100%</b></label>
+          <input type="range" id="contrast" min="40" max="160" value="100">
+        </div>
+        <div class="slider-row">
+          <label>Saturation <b id="sLabel">100%</b></label>
+          <input type="range" id="saturate" min="0" max="200" value="100">
+        </div>
+        <div class="slider-row">
+          <label>Ketajaman (Sharpen) <b id="shLabel">0%</b></label>
+          <input type="range" id="sharpness" min="0" max="100" value="35">
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">Opsi Bidikan</div>
+        <div class="toggle-row">
+          <button class="chip active" id="mirrorChip">Mirror: ON</button>
+          <button class="chip" id="gridChip">Grid: OFF</button>
+          <button class="chip" id="soundChip">Suara: ON</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">Mode & Timer</div>
+        <div class="toggle-row" style="margin-bottom:10px;">
+          <button class="chip active" id="modeSingleChip">Single Shot</button>
+          <button class="chip" id="modeStripChip">Film Strip (4x)</button>
+        </div>
+        <div class="timer-row">
+          <button class="chip active" data-t="0">0s</button>
+          <button class="chip" data-t="3">3s</button>
+          <button class="chip" data-t="5">5s</button>
+          <button class="chip" data-t="10">10s</button>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary" id="shootBtn" disabled>Ambil Foto</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn-secondary" id="switchCamBtn" style="flex:1;" disabled>Ganti Kamera</button>
+        <button class="btn-ghost" id="clearBtn">Bersihkan Galeri</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- FILM STRIP GALLERY -->
+  <div class="filmstrip-wrap">
+    <div class="section-label">Hasil Jepretan</div>
+    <div class="filmstrip" id="filmstrip">
+      <div class="empty-msg" id="emptyMsg">Belum ada foto. Ambil bidikan pertamamu.</div>
+    </div>
+  </div>
+
+  <footer>STUDIO/01 — dijalankan sepenuhnya di browser. Tidak ada foto atau audio yang diunggah ke server mana pun.</footer>
+</div>
+
+<script>
+(function(){
+  const video = document.getElementById('video');
+  const placeholder = document.getElementById('placeholder');
+  const startCamBtn = document.getElementById('startCamBtn');
+  const switchCamBtn = document.getElementById('switchCamBtn');
+  const shootBtn = document.getElementById('shootBtn');
+  const captureCanvas = document.getElementById('captureCanvas');
+  const camDot = document.getElementById('camDot');
+  const camStatus = document.getElementById('camStatus');
+  const resStatus = document.getElementById('resStatus');
+  const qualStatus = document.getElementById('qualStatus');
+  const countdownNum = document.getElementById('countdownNum');
+  const flashEl = document.getElementById('flashEl');
+  const recIndicator = document.getElementById('recIndicator');
+  const gridOverlay = document.getElementById('gridOverlay');
+  const vignetteEl = document.getElementById('vignetteEl');
+  const filmstrip = document.getElementById('filmstrip');
+  const emptyMsg = document.getElementById('emptyMsg');
+  const modeLabel = document.getElementById('modeLabel');
+  const filterLabel = document.getElementById('filterLabel');
+  const isoVal = document.getElementById('isoVal');
+  const fVal = document.getElementById('fVal');
+  const shutterVal = document.getElementById('shutterVal');
+  const sharpVal = document.getElementById('sharpVal');
+  const sharpenMatrix = document.getElementById('sharpenMatrix');
+  const eqBars = document.getElementById('eqBars');
+
+  let stream = null;
+  let currentFacing = 'user';
+  let mirrored = true;
+  let gridOn = false;
+  let soundOn = true;
+  let mode = 'single'; // or 'strip'
+  let timerSecs = 0;
+  let activePreset = 'normal';
+  let photos = [];
+  let currentQuality = 'fhd';
+
+  const qualities = {
+    hd:  {w:1280, h:720,  label:'HD 720p'},
+    fhd: {w:1920, h:1080, label:'Full HD 1080p'},
+    uhd: {w:3840, h:2160, label:'4K UHD'}
+  };
+
+  const presets = {
+    normal:   {name:'Normal',   extra:'', vignette:false},
+    noir:     {name:'Noir',     extra:'grayscale(100%) contrast(1.15)', vignette:false},
+    sepia:    {name:'Sepia',    extra:'sepia(75%)', vignette:false},
+    vivid:    {name:'Vivid',    extra:'saturate(1.6) contrast(1.05)', vignette:false},
+    cool:     {name:'Cool',     extra:'hue-rotate(-8deg) saturate(1.15) contrast(1.03)', vignette:false},
+    warm:     {name:'Warm',     extra:'sepia(25%) saturate(1.25) brightness(1.03)', vignette:false},
+    vintage:  {name:'Vintage',  extra:'sepia(35%) contrast(1.1) brightness(0.95) saturate(1.1)', vignette:true},
+    dramatic: {name:'Dramatic', extra:'contrast(1.35) brightness(0.9) saturate(0.75)', vignette:true},
+  };
+
+  // Build filter swatches
+  const filterGrid = document.getElementById('filterGrid');
+  Object.keys(presets).forEach(key=>{
+    const el = document.createElement('div');
+    el.className = 'filter-swatch' + (key==='normal' ? ' active':'');
+    el.textContent = presets[key].name;
+    el.dataset.key = key;
+    el.addEventListener('click', ()=>{
+      document.querySelectorAll('.filter-swatch').forEach(s=>s.classList.remove('active'));
+      el.classList.add('active');
+      activePreset = key;
+      filterLabel.textContent = 'FILTER: ' + presets[key].name.toUpperCase();
+      applyLiveFilter();
+    });
+    filterGrid.appendChild(el);
+  });
+
+  const brightnessSlider = document.getElementById('brightness');
+  const contrastSlider = document.getElementById('contrast');
+  const saturateSlider = document.getElementById('saturate');
+  const sharpnessSlider = document.getElementById('sharpness');
+  const bLabel = document.getElementById('bLabel');
+  const cLabel = document.getElementById('cLabel');
+  const sLabel = document.getElementById('sLabel');
+  const shLabel = document.getElementById('shLabel');
+
+  function sharpenK(amount){
+    // amount 0..100 -> convolution strength 0..0.9
+    return (amount/100) * 0.9;
+  }
+
+  function updateSharpenMatrix(amount){
+    const k = sharpenK(amount);
+    const center = (1 + 4*k).toFixed(3);
+    const edge = (-k).toFixed(3);
+    sharpenMatrix.setAttribute('kernelMatrix', `0 ${edge} 0 ${edge} ${center} ${edge} 0 ${edge} 0`);
+  }
+
+  function currentFilterString(){
+    const b = brightnessSlider.value, c = contrastSlider.value, s = saturateSlider.value;
+    const preset = presets[activePreset];
+    return `brightness(${b}%) contrast(${c}%) saturate(${s}%) ${preset.extra}`.trim();
+  }
+
+  function applyLiveFilter(){
+    const f = currentFilterString();
+    const sharpAmt = parseInt(sharpnessSlider.value);
+    const sharpPart = sharpAmt > 0 ? 'url(#sharpenFilter) ' : '';
+    video.style.filter = sharpPart + f;
+    vignetteEl.classList.toggle('show', presets[activePreset].vignette);
+    updateHud();
+  }
+
+  function updateHud(){
+    const b = parseInt(brightnessSlider.value), c = parseInt(contrastSlider.value), s = parseInt(saturateSlider.value), sh = parseInt(sharpnessSlider.value);
+    bLabel.textContent = b + '%';
+    cLabel.textContent = c + '%';
+    sLabel.textContent = s + '%';
+    shLabel.textContent = sh + '%';
+    sharpVal.textContent = sh + '%';
+    // cosmetic mock camera readout, purely for atmosphere
+    const iso = Math.round(100 + (100 - b) * 6.4);
+    const ap = (2.8 - (c-100)/200).toFixed(1);
+    const shutterDenom = Math.max(30, Math.round(125 - (s-100)*0.5));
+    isoVal.textContent = Math.max(50, iso);
+    fVal.textContent = Math.max(1.4, ap);
+    shutterVal.textContent = '1/' + shutterDenom;
+  }
+  [brightnessSlider, contrastSlider, saturateSlider].forEach(sl=>{
+    sl.addEventListener('input', applyLiveFilter);
+  });
+  sharpnessSlider.addEventListener('input', ()=>{
+    updateSharpenMatrix(sharpnessSlider.value);
+    applyLiveFilter();
+  });
+
+  // Toggles
+  const mirrorChip = document.getElementById('mirrorChip');
+  mirrorChip.addEventListener('click', ()=>{
+    mirrored = !mirrored;
+    mirrorChip.textContent = 'Mirror: ' + (mirrored?'ON':'OFF');
+    mirrorChip.classList.toggle('active', mirrored);
+    video.classList.toggle('mirror', mirrored);
+  });
+  const gridChip = document.getElementById('gridChip');
+  gridChip.addEventListener('click', ()=>{
+    gridOn = !gridOn;
+    gridChip.textContent = 'Grid: ' + (gridOn?'ON':'OFF');
+    gridChip.classList.toggle('active', gridOn);
+    gridOverlay.classList.toggle('show', gridOn);
+  });
+  const soundChip = document.getElementById('soundChip');
+  soundChip.addEventListener('click', ()=>{
+    soundOn = !soundOn;
+    soundChip.textContent = 'Suara: ' + (soundOn?'ON':'OFF');
+    soundChip.classList.toggle('active', soundOn);
+  });
+
+  const modeSingleChip = document.getElementById('modeSingleChip');
+  const modeStripChip = document.getElementById('modeStripChip');
+  modeSingleChip.addEventListener('click', ()=>{
+    mode='single';
+    modeSingleChip.classList.add('active'); modeStripChip.classList.remove('active');
+    modeLabel.textContent = 'MODE: SINGLE';
+    shootBtn.textContent = 'Ambil Foto';
+  });
+  modeStripChip.addEventListener('click', ()=>{
+    mode='strip';
+    modeStripChip.classList.add('active'); modeSingleChip.classList.remove('active');
+    modeLabel.textContent = 'MODE: FILM STRIP';
+    shootBtn.textContent = 'Ambil 4 Foto';
+  });
+
+  document.querySelectorAll('.timer-row .chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('.timer-row .chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      timerSecs = parseInt(chip.dataset.t);
+    });
+  });
+
+  document.querySelectorAll('.quality-row .chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('.quality-row .chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      currentQuality = chip.dataset.q;
+      qualStatus.textContent = 'Kualitas: ' + qualities[currentQuality].label;
+      if(stream){ startCamera(currentFacing); }
+    });
+  });
+
+  // Shutter click sound via WebAudio (no external files)
+  let sfxCtx;
+  function playShutter(){
+    if(!soundOn) return;
+    try{
+      sfxCtx = sfxCtx || new (window.AudioContext||window.webkitAudioContext)();
+      const t = sfxCtx.currentTime;
+      const osc = sfxCtx.createOscillator();
+      const gain = sfxCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(1200, t);
+      osc.frequency.exponentialRampToValueAtTime(300, t+0.06);
+      gain.gain.setValueAtTime(0.15, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t+0.09);
+      osc.connect(gain).connect(sfxCtx.destination);
+      osc.start(t); osc.stop(t+0.1);
+    }catch(e){}
+  }
+
+  /* ---------------- Generative ambient music engine ---------------- */
+  const MusicEngine = (function(){
+    let ctx, master, filterNode, delayNode, feedbackGain, noiseSrc;
+    let isPlaying = false, nextChordTime = 0, schedulerTimer = null;
+    const chordDuration = 4;
+    const chords = [
+      [261.63, 329.63, 392.00, 493.88], // Cmaj7
+      [220.00, 261.63, 329.63, 392.00], // Am7
+      [174.61, 220.00, 261.63, 349.23], // Fmaj7
+      [196.00, 246.94, 293.66, 349.23], // G-ish
+    ];
+
+    function init(){
+      ctx = new (window.AudioContext||window.webkitAudioContext)();
+      master = ctx.createGain();
+      master.gain.value = 0.35;
+      filterNode = ctx.createBiquadFilter();
+      filterNode.type = 'lowpass';
+      filterNode.frequency.value = 1600;
+      delayNode = ctx.createDelay();
+      delayNode.delayTime.value = 0.35;
+      feedbackGain = ctx.createGain();
+      feedbackGain.gain.value = 0.26;
+      delayNode.connect(feedbackGain);
+      feedbackGain.connect(delayNode);
+      filterNode.connect(delayNode);
+      delayNode.connect(master);
+      filterNode.connect(master);
+      master.connect(ctx.destination);
+
+      // soft vinyl-like texture bed
+      const bufferSize = 2 * ctx.sampleRate;
+      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const out = noiseBuffer.getChannelData(0);
+      for(let i=0;i<bufferSize;i++){ out[i] = (Math.random()*2-1) * 0.02; }
+      noiseSrc = ctx.createBufferSource();
+      noiseSrc.buffer = noiseBuffer;
+      noiseSrc.loop = true;
+      const noiseFilter = ctx.createBiquadFilter();
+      noiseFilter.type = 'highpass';
+      noiseFilter.frequency.value = 2500;
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.value = 0.4;
+      noiseSrc.connect(noiseFilter).connect(noiseGain).connect(master);
+      noiseSrc.start();
+    }
+
+    function playChord(freqs, time){
+      freqs.forEach((f, i)=>{
+        const osc = ctx.createOscillator();
+        osc.type = i===0 ? 'sine' : 'triangle';
+        osc.frequency.value = f;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0, time);
+        g.gain.linearRampToValueAtTime(0.055, time + 1.2);
+        g.gain.linearRampToValueAtTime(0.0, time + chordDuration);
+        osc.connect(g).connect(filterNode);
+        osc.start(time);
+        osc.stop(time + chordDuration + 0.1);
+      });
+    }
+
+    function scheduler(){
+      while(nextChordTime < ctx.currentTime + 1.0){
+        const idx = Math.floor(nextChordTime / chordDuration) % chords.length;
+        playChord(chords[idx], nextChordTime);
+        nextChordTime += chordDuration;
+      }
+      schedulerTimer = setTimeout(scheduler, 250);
+    }
+
+    return {
+      start(){
+        if(!ctx) init();
+        if(ctx.state === 'suspended') ctx.resume();
+        if(isPlaying) return;
+        isPlaying = true;
+        nextChordTime = ctx.currentTime + 0.1;
+        scheduler();
+      },
+      stop(){
+        isPlaying = false;
+        if(schedulerTimer) clearTimeout(schedulerTimer);
+      },
+      setVolume(v){ if(master) master.gain.value = v; },
+      get playing(){ return isPlaying; }
+    };
+  })();
+
+  const musicToggle = document.getElementById('musicToggle');
+  const musicTitle = document.getElementById('musicTitle');
+  const musicSub = document.getElementById('musicSub');
+  const musicVol = document.getElementById('musicVol');
+  const musicModeGen = document.getElementById('musicModeGen');
+  const musicModeUrl = document.getElementById('musicModeUrl');
+  const musicModeYt = document.getElementById('musicModeYt');
+  const musicUrlRow = document.getElementById('musicUrlRow');
+  const musicUrlInput = document.getElementById('musicUrlInput');
+  const musicUrlLoad = document.getElementById('musicUrlLoad');
+  const musicAudio = document.getElementById('musicAudio');
+  const musicError = document.getElementById('musicError');
+
+  let musicMode = 'gen'; // 'gen' | 'url' | 'ytb'
+  let urlTrackName = '';
+  musicAudio.loop = true;
+
+  function stopAllMusic(){
+    MusicEngine.stop();
+    musicAudio.pause();
+    if(ytPlayer && ytPlayer.pauseVideo) { try{ ytPlayer.pauseVideo(); }catch(e){} }
+    musicToggle.textContent = '▶';
+    eqBars.classList.add('paused');
+  }
+
+  function setMode(newMode){
+    if(musicMode === newMode) return;
+    stopAllMusic();
+    musicMode = newMode;
+    musicModeGen.classList.toggle('active', newMode==='gen');
+    musicModeUrl.classList.toggle('active', newMode==='url');
+    musicModeYt.classList.toggle('active', newMode==='ytb');
+    musicUrlRow.style.display = (newMode==='url' || newMode==='ytb') ? 'flex' : 'none';
+    musicUrlInput.placeholder = newMode==='ytb' ? 'https://www.youtube.com/watch?v=... atau youtu.be/...' : 'https://.../lagu.mp3 atau .mp4';
+    musicError.style.display = 'none';
+    if(newMode === 'gen'){
+      musicTitle.textContent = 'Ambient Loop — off';
+      musicSub.textContent = 'dihasilkan langsung di browser, tanpa file';
+    } else if(newMode === 'url'){
+      musicTitle.textContent = urlTrackName || 'Belum ada trek dimuat';
+      musicSub.textContent = urlTrackName ? 'sumber: URL eksternal' : 'tempel link .mp3 / .mp4 lalu tekan Muat';
+    } else {
+      musicTitle.textContent = ytTrackTitle || 'Belum ada video dimuat';
+      musicSub.textContent = ytTrackTitle ? 'sumber: YouTube' : 'tempel link video YouTube lalu tekan Muat';
+    }
+  }
+  musicModeGen.addEventListener('click', ()=>setMode('gen'));
+  musicModeUrl.addEventListener('click', ()=>setMode('url'));
+  musicModeYt.addEventListener('click', ()=>setMode('ytb'));
+
+  musicUrlLoad.addEventListener('click', ()=>{
+    const url = musicUrlInput.value.trim();
+    if(!url) return;
+    musicError.style.display = 'none';
+    if(musicMode === 'url'){
+      stopAllMusic();
+      musicAudio.src = url;
+      try{
+        urlTrackName = decodeURIComponent(url.split('/').pop().split('?')[0]) || 'Trek eksternal';
+      }catch(e){
+        urlTrackName = 'Trek eksternal';
+      }
+      musicTitle.textContent = urlTrackName;
+      musicSub.textContent = 'memuat...';
+      musicAudio.load();
+    } else if(musicMode === 'ytb'){
+      loadYouTubeTrack(url);
+    }
+  });
+  musicAudio.addEventListener('canplaythrough', ()=>{
+    if(musicMode==='url') musicSub.textContent = 'siap diputar — sumber: URL eksternal';
+  });
+  musicAudio.addEventListener('error', ()=>{
+    if(musicMode==='url'){
+      musicError.style.display = 'block';
+      musicSub.textContent = 'gagal memuat';
+      musicToggle.textContent = '▶';
+      eqBars.classList.add('paused');
+    }
+  });
+  musicAudio.addEventListener('play', ()=>eqBars.classList.remove('paused'));
+  musicAudio.addEventListener('pause', ()=>eqBars.classList.add('paused'));
+
+  musicVol.addEventListener('input', ()=>{
+    const v = musicVol.value/100;
+    MusicEngine.setVolume(v * 0.6);
+    musicAudio.volume = v;
+    if(ytPlayer && ytPlayer.setVolume) { try{ ytPlayer.setVolume(Math.round(v*100)); }catch(e){} }
+  });
+
+  /* ---- YouTube IFrame Player (official embed API — no stream extraction) ---- */
+  let ytPlayer = null, ytReady = false, ytTrackTitle = '', pendingVideoId = null;
+
+  function extractYouTubeId(url){
+    const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    return m ? m[1] : null;
+  }
+
+  function loadYouTubeAPI(){
+    if(window.YT && window.YT.Player){ onYTApiReady(); return; }
+    if(window.__ytApiLoading){ return; }
+    window.__ytApiLoading = true;
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+    window.onYouTubeIframeAPIReady = onYTApiReady;
+  }
+
+  function onYTApiReady(){
+    ytPlayer = new YT.Player('ytPlayer', {
+      height: '113', width: '200',
+      playerVars: { controls: 0, disablekb: 1, modestbranding: 1, rel: 0, playsinline: 1 },
+      events: {
+        onReady: ()=>{
+          ytReady = true;
+          if(pendingVideoId){ ytPlayer.cueVideoById(pendingVideoId); pendingVideoId = null; }
+        },
+        onStateChange: (e)=>{
+          if(e.data === YT.PlayerState.PLAYING){
+            eqBars.classList.remove('paused');
+            const data = ytPlayer.getVideoData();
+            if(data && data.title){
+              ytTrackTitle = data.title;
+              if(musicMode === 'ytb'){
+                musicTitle.textContent = ytTrackTitle;
+                musicSub.textContent = 'sumber: YouTube';
+              }
+            }
+            musicToggle.textContent = '❚❚';
+          } else if(e.data === YT.PlayerState.PAUSED){
+            eqBars.classList.add('paused');
+            musicToggle.textContent = '▶';
+          } else if(e.data === YT.PlayerState.ENDED){
+            ytPlayer.playVideo(); // simple loop
+          }
+        },
+        onError: ()=>{
+          musicError.style.display = 'block';
+          musicSub.textContent = 'video tidak bisa diputar (mungkin dibatasi pemiliknya)';
+        }
+      }
+    });
+  }
+
+  function loadYouTubeTrack(url){
+    const id = extractYouTubeId(url);
+    if(!id){
+      musicError.style.display = 'block';
+      musicSub.textContent = 'link YouTube tidak dikenali';
+      return;
+    }
+    stopAllMusic();
+    musicSub.textContent = 'memuat...';
+    musicTitle.textContent = 'Memuat video...';
+    if(!window.YT || !window.YT.Player){
+      loadYouTubeAPI();
+      pendingVideoId = id;
+    } else if(!ytReady){
+      pendingVideoId = id;
+    } else {
+      ytPlayer.cueVideoById(id);
+    }
+  }
+
+  musicToggle.addEventListener('click', ()=>{
+    if(musicMode === 'gen'){
+      if(MusicEngine.playing){
+        MusicEngine.stop();
+        musicToggle.textContent = '▶';
+        musicTitle.textContent = 'Ambient Loop — off';
+        eqBars.classList.add('paused');
+      } else {
+        MusicEngine.setVolume(musicVol.value/100 * 0.6);
+        MusicEngine.start();
+        musicToggle.textContent = '❚❚';
+        musicTitle.textContent = 'Ambient Loop — bermain';
+        eqBars.classList.remove('paused');
+      }
+    } else if(musicMode === 'url'){
+      if(!musicAudio.src){
+        musicError.style.display = 'block';
+        musicSub.textContent = 'tempel link .mp3 / .mp4 lalu tekan Muat';
+        return;
+      }
+      if(musicAudio.paused){
+        musicAudio.volume = musicVol.value/100;
+        musicAudio.play().then(()=>{
+          musicToggle.textContent = '❚❚';
+        }).catch(()=>{
+          musicError.style.display = 'block';
+        });
+      } else {
+        musicAudio.pause();
+        musicToggle.textContent = '▶';
+      }
+    } else if(musicMode === 'ytb'){
+      if(!ytPlayer || !ytReady){
+        musicError.style.display = 'block';
+        musicSub.textContent = 'tempel link video YouTube lalu tekan Muat';
+        return;
+      }
+      const state = ytPlayer.getPlayerState();
+      if(state === 1){ // playing
+        ytPlayer.pauseVideo();
+      } else {
+        ytPlayer.setVolume(Math.round(musicVol.value/100 * 100));
+        ytPlayer.playVideo();
+      }
+    }
+  });
+
+  /* ---------------- Camera ---------------- */
+  async function startCamera(facing){
+    try{
+      if(stream){ stream.getTracks().forEach(t=>t.stop()); }
+      const q = qualities[currentQuality];
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: facing, width:{ideal:q.w}, height:{ideal:q.h} },
+        audio:false
+      });
+      video.srcObject = stream;
+      video.style.display = 'block';
+      placeholder.style.display = 'none';
+      video.classList.toggle('mirror', mirrored);
+      applyLiveFilter();
+      camDot.className = 'dot-live';
+      camStatus.textContent = 'Kamera aktif';
+      shootBtn.disabled = false;
+      switchCamBtn.disabled = false;
+      video.addEventListener('loadedmetadata', ()=>{
+        resStatus.textContent = video.videoWidth + ' × ' + video.videoHeight;
+      }, {once:true});
+    }catch(err){
+      camStatus.textContent = 'Akses kamera ditolak/gagal';
+      placeholder.innerHTML = 'Tidak bisa mengakses kamera.<br><span style="color:var(--red)">' + (err.message||'Izin ditolak') + '</span><br><button class="btn-primary" id="retryBtn" style="margin-top:12px;">Coba Lagi</button>';
+      document.getElementById('retryBtn').addEventListener('click', ()=>startCamera(currentFacing));
+    }
+  }
+
+  startCamBtn.addEventListener('click', ()=>startCamera(currentFacing));
+  switchCamBtn.addEventListener('click', ()=>{
+    currentFacing = currentFacing === 'user' ? 'environment' : 'user';
+    startCamera(currentFacing);
+  });
+
+  // Countdown + capture
+  function wait(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+  async function runCountdown(){
+    if(timerSecs === 0) return;
+    for(let i=timerSecs;i>=1;i--){
+      countdownNum.textContent = i;
+      countdownNum.style.opacity = 1;
+      countdownNum.style.transform = 'scale(1.15)';
+      await wait(150);
+      countdownNum.style.transform = 'scale(1)';
+      await wait(850);
+    }
+    countdownNum.style.opacity = 0;
+  }
+
+  function doFlash(){
+    flashEl.style.transition = 'none';
+    flashEl.style.opacity = 0.85;
+    requestAnimationFrame(()=>{
+      flashEl.style.transition = 'opacity .35s ease';
+      flashEl.style.opacity = 0;
+    });
+  }
+
+  // Manual unsharp-mask style convolution, applied to the still frame so
+  // exported photos stay crisp even though canvas 2D can't use SVG url() filters.
+  function sharpenImageData(imageData, amount){
+    if(amount <= 0) return imageData;
+    const k = sharpenK(amount * 100);
+    const w = imageData.width, h = imageData.height;
+    const src = imageData.data;
+    const dst = new Uint8ClampedArray(src.length);
+    for(let y=0; y<h; y++){
+      for(let x=0; x<w; x++){
+        const idx = (y*w + x) * 4;
+        if(x===0 || x===w-1 || y===0 || y===h-1){
+          dst[idx]=src[idx]; dst[idx+1]=src[idx+1]; dst[idx+2]=src[idx+2]; dst[idx+3]=src[idx+3];
+          continue;
+        }
+        for(let c=0;c<3;c++){
+          const center = src[idx+c];
+          const up = src[idx - w*4 + c];
+          const down = src[idx + w*4 + c];
+          const left = src[idx - 4 + c];
+          const right = src[idx + 4 + c];
+          dst[idx+c] = center*(1+4*k) - k*(up+down+left+right);
+        }
+        dst[idx+3] = src[idx+3];
+      }
+    }
+    return new ImageData(dst, w, h);
+  }
+
+  function captureFrame(){
+    const w = video.videoWidth, h = video.videoHeight;
+    captureCanvas.width = w;
+    captureCanvas.height = h;
+    const ctx = captureCanvas.getContext('2d');
+    ctx.save();
+    ctx.filter = currentFilterString();
+    if(mirrored){
+      ctx.translate(w,0);
+      ctx.scale(-1,1);
+    }
+    ctx.drawImage(video, 0, 0, w, h);
+    ctx.restore();
+
+    if(presets[activePreset].vignette){
+      const grad = ctx.createRadialGradient(w/2,h/2, h*0.25, w/2,h/2, h*0.7);
+      grad.addColorStop(0,'rgba(0,0,0,0)');
+      grad.addColorStop(1,'rgba(0,0,0,0.55)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0,0,w,h);
+    }
+
+    const sharpAmt = parseInt(sharpnessSlider.value) / 100;
+    if(sharpAmt > 0){
+      const imgData = ctx.getImageData(0,0,w,h);
+      const sharpened = sharpenImageData(imgData, sharpAmt);
+      ctx.putImageData(sharpened, 0, 0);
+    }
+    return captureCanvas.toDataURL('image/png');
+  }
+
+  function addPhotoToGallery(dataUrl){
+    emptyMsg.style.display = 'none';
+    const frame = document.createElement('div');
+    frame.className = 'frame';
+    frame.innerHTML = `
+      <div class="sprockets"></div>
+      <div class="sprockets right"></div>
+      <img src="${dataUrl}" alt="Hasil jepretan">
+      <div class="frame-actions">
+        <span>#${photos.length+1}</span>
+        <a download="studio01-${Date.now()}.png" href="${dataUrl}">Unduh</a>
+      </div>
+    `;
+    filmstrip.appendChild(frame);
+    filmstrip.scrollLeft = filmstrip.scrollWidth;
+    photos.push(dataUrl);
+  }
+
+  function composeStrip(shots){
+    return new Promise(resolve=>{
+      const imgs = shots.map(src=>{ const i = new Image(); i.src = src; return i; });
+      let loaded = 0;
+      imgs.forEach(img=>{
+        img.onload = ()=>{
+          loaded++;
+          if(loaded === imgs.length){
+            const pad = 24, gap = 18, sprocket = 14;
+            const cw = imgs[0].width;
+            const ch = imgs[0].height;
+            const canvas = document.createElement('canvas');
+            canvas.width = cw + pad*2 + sprocket*2;
+            canvas.height = ch*imgs.length + gap*(imgs.length-1) + pad*2 + 60;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#0c0c0e';
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+            imgs.forEach((img,i)=>{
+              const y = pad + i*(ch+gap);
+              ctx.drawImage(img, pad+sprocket, y, cw, ch);
+            });
+            ctx.fillStyle = '#151319';
+            for(let side=0; side<2; side++){
+              const x = side===0 ? pad/2+2 : canvas.width - pad/2 - 2;
+              for(let y=10; y<canvas.height-10; y+=20){
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI*2);
+                ctx.fill();
+              }
+            }
+            ctx.fillStyle = '#8b8894';
+            ctx.font = '20px "Bebas Neue", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('STUDIO/01', canvas.width/2, canvas.height - 22);
+            resolve(canvas.toDataURL('image/png'));
+          }
+        };
+      });
+    });
+  }
+
+  async function shoot(){
+    shootBtn.disabled = true;
+    recIndicator.classList.add('on');
+    if(mode === 'single'){
+      await runCountdown();
+      doFlash();
+      playShutter();
+      await wait(80);
+      const dataUrl = captureFrame();
+      addPhotoToGallery(dataUrl);
+    } else {
+      const shots = [];
+      for(let i=0;i<4;i++){
+        await runCountdown();
+        doFlash();
+        playShutter();
+        await wait(80);
+        shots.push(captureFrame());
+        if(i<3) await wait(500);
+      }
+      const stripUrl = await composeStrip(shots);
+      emptyMsg.style.display = 'none';
+      const frame = document.createElement('div');
+      frame.className = 'frame';
+      frame.style.width = '110px';
+      frame.innerHTML = `
+        <div class="sprockets"></div>
+        <div class="sprockets right"></div>
+        <img src="${stripUrl}" alt="Film strip">
+        <div class="frame-actions">
+          <span>STRIP</span>
+          <a download="studio01-strip-${Date.now()}.png" href="${stripUrl}">Unduh</a>
+        </div>
+      `;
+      filmstrip.appendChild(frame);
+      filmstrip.scrollLeft = filmstrip.scrollWidth;
+      photos.push(stripUrl);
+    }
+    recIndicator.classList.remove('on');
+    shootBtn.disabled = false;
+  }
+
+  shootBtn.addEventListener('click', shoot);
+
+  document.getElementById('clearBtn').addEventListener('click', ()=>{
+    photos = [];
+    filmstrip.innerHTML = '';
+    filmstrip.appendChild(emptyMsg);
+    emptyMsg.style.display = 'block';
+  });
+
+  updateSharpenMatrix(sharpnessSlider.value);
+  updateHud();
+})();
+</script>
+</body>
+</html>
